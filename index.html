@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa em PDFs</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+    <h1>Conferência de Nota</h1>
+    <input type="file" id="fileInput" accept=".zip" />
+    <input type="text" id="searchInput" placeholder="Digite o termo de pesquisa" />
+    <button id="searchButton">Pesquisar</button>
+    <input type="text" id="searchNextWordsInput" placeholder="Digite a palavra para buscar as 3 seguintes" />
+    <button id="searchNextWordsButton">Pesquisar Próximas Palavras</button>
+    <div id="results"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
