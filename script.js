@@ -1,107 +1,118 @@
-document.getElementById('searchButton').addEventListener('click', async () => {
-    const fileInput = document.getElementById('fileInput');
-    const searchInput = document.getElementById('searchInput').value.toLowerCase();
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+import { getStorage, ref as storageRef, uploadBytesResumable } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-    if (fileInput.files.length === 0) {
-        alert('Por favor, carregue um arquivo zipado.');
-        return;
+const storage = getStorage(app);
+storage.maxUploadRetryTime = 600000; // 10 minutos
+storage.maxOperationRetryTime = 600000; // 10 minutos
+
+function uploadImage(file, path) {
+  const fileRef = storageRef(storage, path);
+  const uploadTask = uploadBytesResumable(fileRef, file);
+
+  uploadTask.on('state_changed', 
+    (snapshot) => {
+      // Progresso do upload
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      console.log('Upload is ' + progress + '% done');
+    }, 
+    (error) => {
+      // Tratamento de erros
+      console.error('Erro ao fazer upload:', error);
+    }, 
+    () => {
+      // Upload concluído com sucesso
+      uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+        console.log('File available at', downloadURL);
+      });
     }
+  );
+}
 
-    const zip = new JSZip();
-    const zipFile = fileInput.files[0];
-    const zipContent = await zip.loadAsync(zipFile);
+// Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCKyxMkJJo8I6Du_SrJSVJfh70Vz45Fq4I",
+  authDomain: "limpeza-7ca82.firebaseapp.com",
+  projectId: "limpeza-7ca82",
+  storageBucket: "limpeza-7ca82.appspot.com",
+  messagingSenderId: "513477458942",
+  appId: "1:513477458942:web:4f8344d27b17c68be05eaf"
+};
 
-    for (const fileName in zipContent.files) {
-        if (fileName.endsWith('.pdf')) {
-            try {
-                const fileData = await zipContent.files[fileName].async('uint8array');
-                const pdf = await pdfjsLib.getDocument({ data: fileData }).promise;
-                let textContent = '';
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+const storage = getStorage(app);
 
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const text = await page.getTextContent();
-                    text.items.forEach(item => {
-                        textContent += item.str + ' ';
-                    });
-                }
+// Função para fazer upload de imagem
+function uploadImage(file, path) {
+  const fileRef = storageRef(storage, path);
+  return uploadBytes(fileRef, file).then((snapshot) => {
+    return getDownloadURL(snapshot.ref);
+  });
+}
 
-                if (textContent.toLowerCase().includes(searchInput)) {
-                    const resultItem = document.createElement('div');
-                    resultItem.textContent = `Termo encontrado no arquivo: ${fileName}`;
+// Evento de submissão do formulário
+document.getElementById('registroForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-                    const openButton = document.createElement('button');
-                    openButton.textContent = 'Abrir PDF';
-                    openButton.onclick = () => {
-                        const blob = new Blob([fileData], { type: 'application/pdf' });
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                    };
+  const data = document.getElementById('data').value;
+  const local = document.getElementById('local').value;
+  const fotoAntes = document.getElementById('fotoAntes').files[0];
+  const fotoDepois = document.getElementById('fotoDepois').files[0];
 
-                    resultItem.appendChild(openButton);
-                    resultsDiv.appendChild(resultItem);
-                }
-            } catch (error) {
-                console.error(`Erro ao processar o arquivo ${fileName}:`, error);
-            }
-        }
-    }
+  try {
+    const fotoAntesURL = await uploadImage(fotoAntes, `fotosAntes/${data}_${local}`);
+    const fotoDepoisURL = await uploadImage(fotoDepois, `fotosDepois/${data}_${local}`);
+
+    await set(ref(database, 'registros/' + data), {
+      data: data,
+      local: local,
+      fotoAntes: fotoAntesURL,
+      fotoDepois: fotoDepoisURL
+    });
+
+    document.getElementById('mensagem').innerText = 'Registro salvo com sucesso!';
+    consultarRegistros(); // Atualizar a lista de registros após salvar
+  } catch (error) {
+    document.getElementById('mensagem').innerText = 'Erro ao salvar registro: ' + error.message;
+  }
 });
 
-document.getElementById('searchNextWordsButton').addEventListener('click', async () => {
-    const fileInput = document.getElementById('fileInput');
-    const searchNextWordsInput = document.getElementById('searchNextWordsInput').value.toLowerCase();
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '';
+// Função para consultar dados do Firebase
+function consultarRegistros() {
+  const dbRef = ref(getDatabase(app));
 
-    if (fileInput.files.length === 0) {
-        alert('Por favor, carregue um arquivo zipado.');
-        return;
-    }
+  get(child(dbRef, 'registros')).then((snapshot) => {
+    if (snapshot.exists()) {
+      const registros = snapshot.val();
+      const registrosContainer = document.getElementById('registrosContainer');
+      registrosContainer.innerHTML = ''; // Limpar conteúdo anterior
 
-    const zip = new JSZip();
-    const zipFile = fileInput.files[0];
-    const zipContent = await zip.loadAsync(zipFile);
+      for (const key in registros) {
+        if (registros.hasOwnProperty(key)) {
+          const registro = registros[key];
+          const registroDiv = document.createElement('div');
+          registroDiv.classList.add('registro');
 
-    for (const fileName in zipContent.files) {
-        if (fileName.endsWith('.pdf')) {
-            try {
-                const fileData = await zipContent.files[fileName].async('uint8array');
-                const pdf = await pdfjsLib.getDocument({ data: fileData }).promise;
-                let textContent = '';
+          registroDiv.innerHTML = `
+            <p><strong>Data:</strong> ${registro.data}</p>
+            <p><strong>Local:</strong> ${registro.local}</p>
+            <p><strong>Foto Antes:</strong> <img src="${registro.fotoAntes}" alt="Foto Antes" width="100"></p>
+            <p><strong>Foto Depois:</strong> <img src="${registro.fotoDepois}" alt="Foto Depois" width="100"></p>
+          `;
 
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const text = await page.getTextContent();
-                    text.items.forEach(item => {
-                        textContent += item.str + ' ';
-                    });
-                }
-
-                const regex = new RegExp(`\\b${searchNextWordsInput}\\b`, 'i');
-                const match = regex.exec(textContent);
-                if (match) {
-                    const startIndex = match.index;
-                    const wordsAfter = textContent.slice(startIndex).split(' ').slice(1, 4).join(' ');
-                    const resultItem = document.createElement('div');
-                    resultItem.textContent = `Termo encontrado no arquivo: ${fileName}, palavras seguintes: ${wordsAfter}`;
-
-                    const openButton = document.createElement('button');
-                    openButton.textContent = 'Abrir PDF';
-                    openButton.onclick = () => {
-                        const blob = new Blob([fileData], { type: 'application/pdf' });
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                    };
-
-                    resultItem.appendChild(openButton);
-                    resultsDiv.appendChild(resultItem);
-                }
-            } catch (error) {
-                console.error(`Erro ao processar o arquivo ${fileName}:`, error);
-            }
+          registrosContainer.appendChild(registroDiv);
         }
+      }
+    } else {
+      console.log("Nenhum registro encontrado.");
     }
-});
+  }).catch((error) => {
+    console.error("Erro ao buscar registros: ", error);
+  });
+}
+
+// Chamar a função para consultar registros ao carregar a página
+document.addEventListener('DOMContentLoaded', consultarRegistros);

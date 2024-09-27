@@ -1,26 +1,41 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pesquisa em PDFs</title>
-    <link rel="stylesheet" href="style.css">
-
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <title>Document</title>
 </head>
-
 <body>
-    <h1>Conferência de Nota</h1>
-    <input type="file" id="fileInput" accept=".zip" />
-    <input type="text" id="searchInput" placeholder="Digite o termo de pesquisa" />
-    <button id="searchButton">Pesquisar</button>
-    <input type="text" id="searchNextWordsInput" placeholder="Digite a palavra para buscar as 3 seguintes" />
-    <button id="searchNextWordsButton">Pesquisar Próximas Palavras</button>
-    <div id="results"></div>
+    <div class="container">
+        <h1>Registro de Limpeza 5S</h1>
+        <form id="registroForm">
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="date" id="data" required>
+            </div>
+            <div class="form-group">
+                <label for="local">Local:</label>
+                <input type="text" id="local" required>
+            </div>
+            <div class="form-group">
+                <label for="fotoAntes">Foto Antes:</label>
+                <input type="file" id="fotoAntes" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="fotoDepois">Foto Depois:</label>
+                <input type="file" id="fotoDepois" accept="image/*" required>
+            </div>
+            <button type="submit">Registrar e Enviar Relatório</button>
+        </form>
+        <div id="mensagem"></div>
+    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-    <script src="script.js"></script>
+    <div class="container">
+        <h2>Registros</h2>
+        <div id="registrosContainer"></div>
+    </div>
+
+    <script type="module" src="script.js"></script>
 </body>
-
 </html>
